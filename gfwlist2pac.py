@@ -19,7 +19,10 @@ VERSION = '0.0.1'
 defaultConfig = {
     'gfwUrl'         : 'http://autoproxy-gfwlist.googlecode.com/svn/trunk/gfwlist.txt',
     'gfwProxy'       : 'SOCKS5 127.0.0.1:7070',
-    'pacProxy'       : 'DIRECT; SOCKS 127.0.0.1:7070; PROXY 127.0.0.1:8087',
+    'httpProxy'      : 'DIRECT; SOCKS 127.0.0.1:7070; PROXY 127.0.0.1:8087',
+    'httpsProxy'     : 'DIRECT; SOCKS 127.0.0.1:7070; PROXY 127.0.0.1:8087',
+    'defaultProxy'   : 'DIRECT; PROXY 127.0.0.1:58118',
+    'direct'         : 'DIRECT; PROXY 127.0.0.1:58118',
     'pacFilename'    : 'autoproxy.pac',
     'debug'          : False
 }
@@ -38,7 +41,10 @@ def parseConfig(defaultConfig):
             config = {
                 'gfwUrl'         : cf.get('config', 'gfwUrl'),
                 'gfwProxy'       : cf.get('config', 'gfwProxy'),
-                'pacProxy'       : cf.get('config', 'pacProxy'),
+                'httpProxy'      : cf.get('config', 'httpProxy'),
+                'httpsProxy'     : cf.get('config', 'httpsProxy'),
+                'defaultProxy'   : cf.get('config', 'defaultProxy'),
+                'direct'         : cf.get('config', 'direct'),
                 'pacFilename'    : cf.get('config', 'pacFilename'),
                 'debug'          : cf.get('config', 'debug') in ['true', 'True']
             }
@@ -70,7 +76,10 @@ def printConfigInfo(config):
     print 'GFWList Proxy: Type: %s, Host: %s, Port: %s , Usr: %s, Pwd: %s' % (config['gfwProxyType'],
                                                                               config['gfwProxyHost'], config['gfwProxyPort'],
                                                                               config['gfwProxyUsr'], config['gfwProxyPwd'])
-    print "PAC Proxy String: %s" % config['pacProxy']
+    print "PAC direct connection String: %s" % config['direct']
+    print "PAC Http Proxy String: %s" % config['httpProxy']
+    print "PAC Https Proxy String: %s" % config['httpsProxy']
+    print "PAC default Proxy String: %s" % config['defaultProxy']
 
 def fetchGFWList(config):
     import socks, socket, urllib2
@@ -228,10 +237,11 @@ def CreatePacFile(userRules, gfwlistRules, config):
  */
 
 // proxy
-var P = "%(proxy)s";
+var P1 = "%(httpProxy)s";
+var P2 = "%(httpsProxy)s";
 %(rules)s
 function FindProxyForURL(url, host) {
-    var D = "DIRECT";
+    var D = "%(direct)s";
 
     var regExpMatch = function(url, pattern) {
         try { 
@@ -252,11 +262,21 @@ function FindProxyForURL(url, host) {
     }
 
     for (i in proxyUserRegexpList) {
-        if(regExpMatch(url, proxyUserRegexpList[i])) return P;
+        if(regExpMatch(url, proxyUserRegexpList[i]))  {
+            if (url.substring(0,5) == "https") 
+                return P2;
+            else
+                return P1;
+        }
     }
 
     for (i in proxyUserWildcardList) {
-        if(shExpMatch(url, proxyUserWildcardList[i])) return P;
+        if(shExpMatch(url, proxyUserWildcardList[i]))  {
+            if (url.substring(0,5) == "https") 
+                return P2;
+            else
+                return P1;
+        }
     }
 
     for (i in directRegexpList) {
@@ -268,20 +288,33 @@ function FindProxyForURL(url, host) {
     }
 
     for (i in proxyRegexpList) {
-        if(regExpMatch(url, proxyRegexpList[i])) return P;
+        if(regExpMatch(url, proxyRegexpList[i]))  {
+            if (url.substring(0,5) == "https") 
+                return P2;
+            else
+                return P1;
+        }
     }
 
     for (i in proxyWildcardList) {
-        if(shExpMatch(url, proxyWildcardList[i])) return P;
+        if(shExpMatch(url, proxyWildcardList[i]))  {
+            if (url.substring(0,5) == "https") 
+                return P2;
+            else
+                return P1;
+        }
     }
 
-    return D;
+    return "%(defaultProxy)s";
 }
 '''
     result = { 'ver'        : VERSION,
                'generated'  : time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime()),
                'gfwmodified': gfwlistModified,
-               'proxy'      : config['pacProxy']    ,
+               'httpProxy'      : config['httpProxy']    ,
+               'httpsProxy'      : config['httpsProxy']    ,
+               'defaultProxy'      : config['defaultProxy']    ,
+               'direct'      : config['direct']    ,
                'rules'      : generatePACRuls(userRules, gfwlistRules)
     }
     pacContent = pacContent % result
