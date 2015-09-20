@@ -17,7 +17,7 @@
 VERSION = '0.0.1'
 
 defaultConfig = {
-    'gfwUrl'         : 'http://autoproxy-gfwlist.googlecode.com/svn/trunk/gfwlist.txt',
+    'gfwUrl'         : 'https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt',
     'gfwProxy'       : 'SOCKS5 127.0.0.1:7070',
     'httpProxy'      : 'DIRECT; SOCKS 127.0.0.1:7070; PROXY 127.0.0.1:8087',
     'httpsProxy'     : 'DIRECT; SOCKS 127.0.0.1:7070; PROXY 127.0.0.1:8087',
